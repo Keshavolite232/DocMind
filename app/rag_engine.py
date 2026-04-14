@@ -34,10 +34,10 @@ class ChromaDefaultEmbeddings(Embeddings):
         self._fn = DefaultEmbeddingFunction()
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [list(e) for e in self._fn(texts)]
+        return [[float(v) for v in e] for e in self._fn(texts)]
 
     def embed_query(self, text: str) -> list[float]:
-        return list(self._fn([text])[0])
+        return [float(v) for v in self._fn([text])[0]]
 from langchain_chroma import Chroma
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -136,8 +136,10 @@ class RAGEngine:
 
     def _init_vector_store(self):
         if self.vector_store_type == "chroma":
+            import chromadb
+            client = chromadb.EphemeralClient()
             return Chroma(
-                persist_directory=self.chroma_persist_dir,
+                client=client,
                 embedding_function=self.embeddings,
                 collection_name="rag_docs",
             )
@@ -198,7 +200,9 @@ class RAGEngine:
 
         log.info("INGEST ▶ Step 3/4 — Embedding & storing chunks")
         t = time.perf_counter()
-        self.vector_store.add_documents(chunks)
+        batch_size = 50
+        for i in range(0, len(chunks), batch_size):
+            self.vector_store.add_documents(chunks[i : i + batch_size])
         log.info("INGEST ✓ Step 3/4 — Stored embeddings (%.1fs)", time.perf_counter() - t)
 
         log.info("INGEST ▶ Step 4/4 — Building retrieval chain")

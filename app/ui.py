@@ -251,6 +251,7 @@ with st.sidebar:
 
         for file in uploaded:
             with st.status(f"Processing {file.name}...", expanded=True) as status:
+                tmp_path = None
                 try:
                     st.write("💾 Saving upload...")
                     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -280,7 +281,7 @@ with st.sidebar:
                     status.update(label=f"✗ Failed: {file.name}", state="error")
                     st.error(f"Error at step above: {e}")
                 finally:
-                    if os.path.exists(tmp_path):
+                    if tmp_path and os.path.exists(tmp_path):
                         os.unlink(tmp_path)
 
     # Ingested doc list
