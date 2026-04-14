@@ -46,10 +46,16 @@ html, body, [class*="css"] {
     color: var(--text);
 }
 
-/* Sidebar */
+/* Sidebar — force always open, prevent collapse */
 section[data-testid="stSidebar"] {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
+    background: var(--surface) !important;
+    border-right: 1px solid var(--border) !important;
+    transform: none !important;
+    min-width: 244px !important;
+    visibility: visible !important;
+}
+section[data-testid="stSidebar"] > div:first-child {
+    width: 244px !important;
 }
 
 /* Header */
@@ -164,17 +170,10 @@ section[data-testid="stSidebar"] {
 /* Divider */
 hr { border-color: var(--border) !important; }
 
-/* Hide default header chrome but keep sidebar toggle visible */
+/* Hide header chrome and sidebar toggle (sidebar is always open) */
 #MainMenu, footer { display: none; }
 header[data-testid="stHeader"] { background: transparent !important; }
-
-/* Sidebar collapse/expand button — must stay visible against dark bg */
-[data-testid="collapsedControl"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-    color: var(--text) !important;
-}
-[data-testid="collapsedControl"] svg { fill: var(--text) !important; }
+[data-testid="collapsedControl"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
