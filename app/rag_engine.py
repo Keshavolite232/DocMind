@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_anthropic import ChatAnthropic
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_chroma import Chroma
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -72,7 +72,7 @@ class RAGEngine:
         chroma_persist_dir: str = "./chroma_db",
         pinecone_index: Optional[str] = None,
         anthropic_api_key: Optional[str] = None,
-        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        embedding_model: str = "BAAI/bge-small-en-v1.5",
         model_name: str = "claude-sonnet-4-5",
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
@@ -93,7 +93,7 @@ class RAGEngine:
 
         log.info("INIT ▶ Loading embedding model '%s'", embedding_model)
         t = time.perf_counter()
-        self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
+        self.embeddings = FastEmbedEmbeddings(model_name=embedding_model)
         log.info("INIT ✓ Embeddings ready (%.1fs)", time.perf_counter() - t)
 
         log.info("INIT ▶ Initialising LLM (%s)", model_name)

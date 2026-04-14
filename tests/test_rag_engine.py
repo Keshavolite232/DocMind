@@ -50,7 +50,7 @@ class TestRAGEngineInit:
     def test_raises_without_api_key(self, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         with (
-            patch("app.rag_engine.HuggingFaceEmbeddings"),
+            patch("app.rag_engine.FastEmbedEmbeddings"),
             patch("app.rag_engine.ChatAnthropic"),
             patch("app.rag_engine.Chroma"),
         ):
@@ -60,7 +60,7 @@ class TestRAGEngineInit:
 
     def test_invalid_vector_store(self, mock_anthropic_key):
         with (
-            patch("app.rag_engine.HuggingFaceEmbeddings"),
+            patch("app.rag_engine.FastEmbedEmbeddings"),
             patch("app.rag_engine.ChatAnthropic"),
             patch("app.rag_engine.Chroma"),
         ):
@@ -76,7 +76,7 @@ class TestIngestion:
     @patch("app.rag_engine.create_history_aware_retriever")
     @patch("app.rag_engine.Chroma")
     @patch("app.rag_engine.ChatAnthropic")
-    @patch("app.rag_engine.HuggingFaceEmbeddings")
+    @patch("app.rag_engine.FastEmbedEmbeddings")
     @patch("app.rag_engine.PyPDFLoader")
     def test_ingest_pdf_success(
         self, mock_loader, mock_embeddings, mock_llm, mock_chroma,
@@ -101,7 +101,7 @@ class TestIngestion:
     @patch("app.rag_engine.create_history_aware_retriever")
     @patch("app.rag_engine.Chroma")
     @patch("app.rag_engine.ChatAnthropic")
-    @patch("app.rag_engine.HuggingFaceEmbeddings")
+    @patch("app.rag_engine.FastEmbedEmbeddings")
     @patch("app.rag_engine.PyPDFLoader")
     def test_duplicate_ingest_skipped(
         self, mock_loader, mock_embeddings, mock_llm, mock_chroma,
@@ -120,7 +120,7 @@ class TestIngestion:
 
     def test_ingest_missing_file(self, mock_anthropic_key):
         with (
-            patch("app.rag_engine.HuggingFaceEmbeddings"),
+            patch("app.rag_engine.FastEmbedEmbeddings"),
             patch("app.rag_engine.ChatAnthropic"),
             patch("app.rag_engine.Chroma"),
         ):
@@ -135,7 +135,7 @@ class TestIngestion:
 class TestQuerying:
     @patch("app.rag_engine.Chroma")
     @patch("app.rag_engine.ChatAnthropic")
-    @patch("app.rag_engine.HuggingFaceEmbeddings")
+    @patch("app.rag_engine.FastEmbedEmbeddings")
     def test_query_without_docs_raises(self, mock_embeddings, mock_llm, mock_chroma, mock_anthropic_key):
         from app.rag_engine import RAGEngine
         engine = RAGEngine()
@@ -144,7 +144,7 @@ class TestQuerying:
 
     @patch("app.rag_engine.Chroma")
     @patch("app.rag_engine.ChatAnthropic")
-    @patch("app.rag_engine.HuggingFaceEmbeddings")
+    @patch("app.rag_engine.FastEmbedEmbeddings")
     def test_query_returns_answer_and_sources(
         self, mock_embeddings, mock_llm, mock_chroma, mock_anthropic_key
     ):
@@ -176,7 +176,7 @@ class TestQuerying:
 class TestMemory:
     @patch("app.rag_engine.Chroma")
     @patch("app.rag_engine.ChatAnthropic")
-    @patch("app.rag_engine.HuggingFaceEmbeddings")
+    @patch("app.rag_engine.FastEmbedEmbeddings")
     def test_clear_memory(self, mock_embeddings, mock_llm, mock_chroma, mock_anthropic_key):
         from app.rag_engine import RAGEngine
 
