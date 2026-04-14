@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 import streamlit as st
+import streamlit.components.v1 as components
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -46,16 +47,10 @@ html, body, [class*="css"] {
     color: var(--text);
 }
 
-/* Sidebar — force always open, prevent collapse */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-    transform: none !important;
-    min-width: 244px !important;
-    visibility: visible !important;
-}
-section[data-testid="stSidebar"] > div:first-child {
-    width: 244px !important;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
 }
 
 /* Header */
@@ -170,10 +165,9 @@ section[data-testid="stSidebar"] > div:first-child {
 /* Divider */
 hr { border-color: var(--border) !important; }
 
-/* Hide header chrome and sidebar toggle (sidebar is always open) */
+/* Hide header chrome */
 #MainMenu, footer { display: none; }
-header[data-testid="stHeader"] { background: transparent !important; }
-[data-testid="collapsedControl"] { display: none !important; }
+header[data-testid="stHeader"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -193,6 +187,26 @@ def init_state():
             st.session_state[k] = v
 
 init_state()
+
+# Force sidebar open on every page load — if it's collapsed (e.g. from browser
+# localStorage or small viewport), click the expand button via JS.
+components.html("""
+<script>
+(function() {
+    function openSidebarIfClosed() {
+        var btn = window.parent.document.querySelector(
+            '[data-testid="collapsedControl"] button'
+        );
+        if (btn && btn.offsetParent !== null) {
+            btn.click();
+        }
+    }
+    setTimeout(openSidebarIfClosed, 150);
+    setTimeout(openSidebarIfClosed, 500);
+    setTimeout(openSidebarIfClosed, 1200);
+})();
+</script>
+""", height=0, scrolling=False)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
