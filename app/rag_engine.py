@@ -38,7 +38,7 @@ class ChromaDefaultEmbeddings(Embeddings):
 
     def embed_query(self, text: str) -> list[float]:
         return [float(v) for v in self._fn([text])[0]]
-from langchain_chroma import Chroma
+from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -136,17 +136,9 @@ class RAGEngine:
 
     def _init_vector_store(self):
         if self.vector_store_type == "chroma":
-            import shutil
-            # Wipe any existing database so every server start is a clean session.
-            # File-based SQLite is used instead of EphemeralClient because
-            # ChromaDB's in-memory SQLite is not thread-safe across Streamlit reruns.
-            if os.path.exists(self.chroma_persist_dir):
-                shutil.rmtree(self.chroma_persist_dir)
-            return Chroma(
-                persist_directory=self.chroma_persist_dir,
-                embedding_function=self.embeddings,
-                collection_name="rag_docs",
-            )
+            # Use LangChain's built-in in-memory store — no SQLite, no threading
+            # issues, no ChromaDB database layer between Streamlit and the vectors.
+            return InMemoryVectorStore(embedding=self.embeddings)
         elif self.vector_store_type == "pinecone":
             return self._init_pinecone()
         else:
@@ -270,8 +262,8 @@ class RAGEngine:
         """Rebuild the LCEL retrieval chain after new docs are ingested."""
         log.info("CHAIN ▶ Building history-aware retriever")
         retriever = self.vector_store.as_retriever(
-            search_type="mmr",
-            search_kwargs={"k": self.retriever_k, "fetch_k": self.retriever_k * 3},
+            search_type="similarity",
+            search_kwargs={"k": self.retriever_k},
         )
 
         # Retriever that rephrases the question using chat history before searching

@@ -10,10 +10,9 @@ anthropic>=0.34.0
 onnxruntime>=1.16.0
 
 # Vector stores
-# langchain-chroma 0.2.x requires chromadb>=0.6.0 which has breaking API changes;
-# pin to 0.1.x to stay compatible with chromadb 0.5.x
+# chromadb is kept solely for its built-in ONNX embedding function (all-MiniLM-L6-v2)
+# The vector store is LangChain's InMemoryVectorStore — no ChromaDB DB layer needed
 chromadb>=0.5.0,<0.6.0
-langchain-chroma>=0.1.0,<0.2.0
 
 # Document loading
 pypdf>=4.3.0
