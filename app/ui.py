@@ -223,22 +223,12 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # API key and engine settings are fixed — no user configuration needed
+    # API key read from environment — engine loads lazily on first PDF upload
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
-    if st.button("Start DocMind", use_container_width=True):
-        if not api_key:
-            st.error("API key not found. Make sure ANTHROPIC_API_KEY is set in your .env file.")
-        else:
-            with st.spinner("Starting up..."):
-                try:
-                    st.session_state.engine = get_engine(api_key)
-                    st.session_state.api_key_set = True
-                    st.success("Ready! Upload a PDF to get started.")
-                except Exception as e:
-                    st.error(f"Init failed: {e}")
+    if not api_key:
+        st.error("ANTHROPIC_API_KEY not found in environment.")
 
-    st.markdown("---")
     st.markdown("#### 📥 Upload PDFs")
 
     uploaded = st.file_uploader(
@@ -249,26 +239,33 @@ with st.sidebar:
     )
 
     if uploaded and st.button("Ingest Documents", use_container_width=True):
+        # Lazy init — engine loads here on first use, not on page load
         if not st.session_state.engine:
-            st.error("Initialize the engine first.")
-        else:
-            for file in uploaded:
-                with st.spinner(f"Ingesting {file.name}..."):
-                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                        tmp.write(file.read())
-                        tmp_path = tmp.name
-                    try:
-                        result = st.session_state.engine.ingest_pdf(tmp_path)
-                        result["name"] = file.name
-                        if result["status"] == "success":
-                            st.session_state.ingested_docs.append(result)
-                            st.success(f"✓ {file.name} — {result['chunks']} chunks")
-                        else:
-                            st.info(f"↩ {file.name} already ingested.")
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-                    finally:
-                        os.unlink(tmp_path)
+            with st.spinner("Loading engine (first time takes ~30s)..."):
+                try:
+                    st.session_state.engine = get_engine(api_key)
+                    st.session_state.api_key_set = True
+                except Exception as e:
+                    st.error(f"Failed to start engine: {e}")
+                    st.stop()
+
+        for file in uploaded:
+            with st.spinner(f"Ingesting {file.name}..."):
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                    tmp.write(file.read())
+                    tmp_path = tmp.name
+                try:
+                    result = st.session_state.engine.ingest_pdf(tmp_path)
+                    result["name"] = file.name
+                    if result["status"] == "success":
+                        st.session_state.ingested_docs.append(result)
+                        st.success(f"✓ {file.name} — {result['chunks']} chunks")
+                    else:
+                        st.info(f"↩ {file.name} already ingested.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                finally:
+                    os.unlink(tmp_path)
 
     # Ingested doc list
     if st.session_state.ingested_docs:
