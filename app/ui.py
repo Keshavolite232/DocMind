@@ -7,7 +7,6 @@ import os
 import sys
 import tempfile
 import streamlit as st
-import streamlit.components.v1 as components
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -47,10 +46,12 @@ html, body, [class*="css"] {
     color: var(--text);
 }
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
+/* Left panel (replaces native sidebar) */
+div[data-testid="column"]:first-child {
     background: var(--surface);
     border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem !important;
+    min-height: 100vh;
 }
 
 /* Header */
@@ -165,9 +166,8 @@ section[data-testid="stSidebar"] {
 /* Divider */
 hr { border-color: var(--border) !important; }
 
-/* Hide header chrome */
-#MainMenu, footer { display: none; }
-header[data-testid="stHeader"] { display: none; }
+/* Hide Streamlit chrome */
+#MainMenu, footer, header[data-testid="stHeader"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,26 +187,6 @@ def init_state():
             st.session_state[k] = v
 
 init_state()
-
-# Force sidebar open on every page load — if it's collapsed (e.g. from browser
-# localStorage or small viewport), click the expand button via JS.
-components.html("""
-<script>
-(function() {
-    function openSidebarIfClosed() {
-        var btn = window.parent.document.querySelector(
-            '[data-testid="collapsedControl"] button'
-        );
-        if (btn && btn.offsetParent !== null) {
-            btn.click();
-        }
-    }
-    setTimeout(openSidebarIfClosed, 150);
-    setTimeout(openSidebarIfClosed, 500);
-    setTimeout(openSidebarIfClosed, 1200);
-})();
-</script>
-""", height=0, scrolling=False)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -232,9 +212,13 @@ def render_message(role: str, content: str, sources: list = None):
     st.markdown(html, unsafe_allow_html=True)
 
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# ── Two-column layout (replaces native sidebar which collapses on Render) ───────
 
-with st.sidebar:
+col_panel, col_chat = st.columns([1, 3], gap="small")
+
+# ── Left panel ─────────────────────────────────────────────────────────────────
+
+with col_panel:
     st.markdown("""
     <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.4rem;
                 background:linear-gradient(135deg,#5b8dee,#e05b8d);
@@ -244,7 +228,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # API key read from environment — engine loads lazily on first PDF upload
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
     if not api_key:
@@ -260,7 +243,6 @@ with st.sidebar:
     )
 
     if uploaded and st.button("Ingest Documents", use_container_width=True):
-        # Lazy init — engine loads here on first use, not on page load
         if not st.session_state.engine:
             with st.spinner("Loading embedding model — first load takes ~30s..."):
                 try:
@@ -270,7 +252,6 @@ with st.sidebar:
                     st.error(f"Failed to start engine: {e}")
                     st.stop()
 
-        # Guard: if engine still None after init attempt, stop here
         if not st.session_state.engine:
             st.error("Engine failed to initialise. Check your ANTHROPIC_API_KEY.")
             st.stop()
@@ -310,7 +291,6 @@ with st.sidebar:
                     if tmp_path and os.path.exists(tmp_path):
                         os.unlink(tmp_path)
 
-    # Ingested doc list
     if st.session_state.ingested_docs:
         st.markdown("---")
         st.markdown("#### 📚 Indexed Documents")
@@ -332,68 +312,66 @@ with st.sidebar:
 
 # ── Main chat area ─────────────────────────────────────────────────────────────
 
-st.markdown("""
-<div class="docmind-header">
-  <p class="docmind-title">DocMind</p>
-  <span class="docmind-tag">RAG · PDF Q&A</span>
-</div>
-""", unsafe_allow_html=True)
-
-# Welcome state
-if not st.session_state.ingested_docs:
+with col_chat:
     st.markdown("""
-    <div style='text-align:center;padding:4rem 2rem;color:#7b8099'>
-      <div style='font-size:3rem;margin-bottom:1rem'>📄</div>
-      <div style='font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:#e8eaf0;margin-bottom:.5rem'>
-        No documents yet
-      </div>
-      <div style='font-size:.9rem'>
-        Initialize the engine and upload PDFs in the sidebar to get started.
-      </div>
+    <div class="docmind-header">
+      <p class="docmind-title">DocMind</p>
+      <span class="docmind-tag">RAG · PDF Q&A</span>
     </div>
     """, unsafe_allow_html=True)
-else:
-    # Render conversation
-    chat_container = st.container()
-    with chat_container:
-        if not st.session_state.messages:
-            st.markdown("""
-            <div style='color:#7b8099;font-size:.9rem;text-align:center;padding:1.5rem 0'>
-              Documents loaded. Ask anything about them below ↓
-            </div>
-            """, unsafe_allow_html=True)
-        for msg in st.session_state.messages:
-            render_message(msg["role"], msg["content"], msg.get("sources"))
 
-    # Input
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        user_input = st.text_input(
-            "Ask a question",
-            placeholder="What does this document say about...?",
-            label_visibility="collapsed",
-            key="user_input",
-        )
-    with col2:
-        send = st.button("Send →", use_container_width=True)
+    if not st.session_state.ingested_docs:
+        st.markdown("""
+        <div style='text-align:center;padding:4rem 2rem;color:#7b8099'>
+          <div style='font-size:3rem;margin-bottom:1rem'>📄</div>
+          <div style='font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:#e8eaf0;margin-bottom:.5rem'>
+            No documents yet
+          </div>
+          <div style='font-size:.9rem'>
+            Upload PDFs on the left to get started.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        chat_container = st.container()
+        with chat_container:
+            if not st.session_state.messages:
+                st.markdown("""
+                <div style='color:#7b8099;font-size:.9rem;text-align:center;padding:1.5rem 0'>
+                  Documents loaded. Ask anything about them below ↓
+                </div>
+                """, unsafe_allow_html=True)
+            for msg in st.session_state.messages:
+                render_message(msg["role"], msg["content"], msg.get("sources"))
 
-    if send and user_input.strip():
-        question = user_input.strip()
-        st.session_state.messages.append({"role": "user", "content": question})
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        input_col, send_col = st.columns([5, 1])
+        with input_col:
+            user_input = st.text_input(
+                "Ask a question",
+                placeholder="What does this document say about...?",
+                label_visibility="collapsed",
+                key="user_input",
+            )
+        with send_col:
+            send = st.button("Send →", use_container_width=True)
 
-        with st.spinner("Thinking..."):
-            try:
-                result = st.session_state.engine.query(question)
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": result["answer"],
-                    "sources": result.get("sources", []),
-                })
-            except Exception as e:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"⚠️ Error: {e}",
-                    "sources": [],
-                })
-        st.rerun()
+        if send and user_input.strip():
+            question = user_input.strip()
+            st.session_state.messages.append({"role": "user", "content": question})
+
+            with st.spinner("Thinking..."):
+                try:
+                    result = st.session_state.engine.query(question)
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": result["answer"],
+                        "sources": result.get("sources", []),
+                    })
+                except Exception as e:
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": f"⚠️ Error: {e}",
+                        "sources": [],
+                    })
+            st.rerun()
