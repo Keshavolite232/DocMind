@@ -2,7 +2,7 @@ services:
   - type: web
     name: docmind-rag-chatbot
     runtime: python
-    buildCommand: pip install -r requirements.txt && python -c "from fastembed import TextEmbedding; list(TextEmbedding('BAAI/bge-small-en-v1.5').embed(['warmup']))"
+    buildCommand: pip install -r requirements.txt && python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()(['warmup'])"
     startCommand: streamlit run app/ui.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
     envVars:
       - key: ANTHROPIC_API_KEY

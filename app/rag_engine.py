@@ -20,7 +20,24 @@ log = logging.getLogger(__name__)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_anthropic import ChatAnthropic
-from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain_core.embeddings import Embeddings
+
+
+class ChromaDefaultEmbeddings(Embeddings):
+    """
+    Thin LangChain wrapper around chromadb's built-in ONNX embedding function
+    (all-MiniLM-L6-v2 in ONNX format).  No PyTorch, no Rust — just onnxruntime
+    which chromadb already depends on.
+    """
+    def __init__(self):
+        from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+        self._fn = DefaultEmbeddingFunction()
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [list(e) for e in self._fn(texts)]
+
+    def embed_query(self, text: str) -> list[float]:
+        return list(self._fn([text])[0])
 from langchain_chroma import Chroma
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -72,7 +89,7 @@ class RAGEngine:
         chroma_persist_dir: str = "./chroma_db",
         pinecone_index: Optional[str] = None,
         anthropic_api_key: Optional[str] = None,
-        embedding_model: str = "BAAI/bge-small-en-v1.5",
+        embedding_model: str = "default",   # uses chromadb's built-in ONNX model
         model_name: str = "claude-sonnet-4-5",
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
@@ -91,9 +108,9 @@ class RAGEngine:
         if not anthropic_key:
             raise ValueError("Anthropic API key required — set ANTHROPIC_API_KEY env var.")
 
-        log.info("INIT ▶ Loading embedding model '%s'", embedding_model)
+        log.info("INIT ▶ Loading chromadb ONNX embedding model")
         t = time.perf_counter()
-        self.embeddings = FastEmbedEmbeddings(model_name=embedding_model)
+        self.embeddings = ChromaDefaultEmbeddings()
         log.info("INIT ✓ Embeddings ready (%.1fs)", time.perf_counter() - t)
 
         log.info("INIT ▶ Initialising LLM (%s)", model_name)
