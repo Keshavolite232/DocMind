@@ -164,9 +164,17 @@ section[data-testid="stSidebar"] {
 /* Divider */
 hr { border-color: var(--border) !important; }
 
-/* Hide default header */
-header[data-testid="stHeader"] { display: none; }
+/* Hide default header chrome but keep sidebar toggle visible */
 #MainMenu, footer { display: none; }
+header[data-testid="stHeader"] { background: transparent !important; }
+
+/* Sidebar collapse/expand button — must stay visible against dark bg */
+[data-testid="collapsedControl"] {
+    background: var(--surface) !important;
+    border-right: 1px solid var(--border) !important;
+    color: var(--text) !important;
+}
+[data-testid="collapsedControl"] svg { fill: var(--text) !important; }
 </style>
 """, unsafe_allow_html=True)
 
