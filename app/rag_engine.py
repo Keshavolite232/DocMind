@@ -5,8 +5,17 @@ Supports both ChromaDB (local) and Pinecone (cloud) as vector stores.
 
 import os
 import hashlib
+import logging
+import time
 from pathlib import Path
 from typing import Optional
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger(__name__)
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -82,18 +91,29 @@ class RAGEngine:
         if not anthropic_key:
             raise ValueError("Anthropic API key required — set ANTHROPIC_API_KEY env var.")
 
-        # Embeddings run locally via sentence-transformers — no API key needed
+        log.info("INIT ▶ Loading embedding model '%s'", embedding_model)
+        t = time.perf_counter()
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
+        log.info("INIT ✓ Embeddings ready (%.1fs)", time.perf_counter() - t)
+
+        log.info("INIT ▶ Initialising LLM (%s)", model_name)
+        t = time.perf_counter()
         self.llm = ChatAnthropic(
             model=model_name,
             temperature=0,
             anthropic_api_key=anthropic_key,
         )
+        log.info("INIT ✓ LLM ready (%.1fs)", time.perf_counter() - t)
 
+        log.info("INIT ▶ Initialising vector store (%s)", vector_store)
+        t = time.perf_counter()
         self.vector_store = self._init_vector_store()
+        log.info("INIT ✓ Vector store ready (%.1fs)", time.perf_counter() - t)
+
         self.chat_history = InMemoryChatMessageHistory()
         self.chain: Optional[RunnableWithMessageHistory] = None
         self.ingested_files: set[str] = set()
+        log.info("INIT ✓ Engine fully initialised")
 
     # ── Vector store initialisation ────────────────────────────────────────────
 
@@ -129,32 +149,48 @@ class RAGEngine:
     def ingest_pdf(self, pdf_path: str) -> dict:
         """Load a PDF, split into chunks, embed, and add to the vector store."""
         path = Path(pdf_path)
+        log.info("INGEST ▶ Starting: %s", path.name)
+
         if not path.exists():
+            log.error("INGEST ✗ File not found: %s", pdf_path)
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
         file_hash = self._file_hash(path)
         if file_hash in self.ingested_files:
+            log.info("INGEST ↩ Skipped (already ingested): %s", path.name)
             return {"status": "skipped", "reason": "already ingested", "file": path.name}
 
+        log.info("INGEST ▶ Step 1/4 — Loading PDF pages")
+        t = time.perf_counter()
         loader = PyPDFLoader(str(path))
         raw_docs = loader.load()
+        log.info("INGEST ✓ Step 1/4 — Loaded %d pages (%.1fs)", len(raw_docs), time.perf_counter() - t)
 
+        log.info("INGEST ▶ Step 2/4 — Splitting into chunks")
+        t = time.perf_counter()
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
             separators=["\n\n", "\n", ". ", " ", ""],
         )
         chunks = splitter.split_documents(raw_docs)
-
         for chunk in chunks:
             chunk.metadata["source_file"] = path.name
             chunk.metadata["file_hash"] = file_hash
+        log.info("INGEST ✓ Step 2/4 — Created %d chunks (%.1fs)", len(chunks), time.perf_counter() - t)
 
-        # chromadb>=0.5.0 auto-persists — .persist() was removed
+        log.info("INGEST ▶ Step 3/4 — Embedding & storing chunks")
+        t = time.perf_counter()
         self.vector_store.add_documents(chunks)
+        log.info("INGEST ✓ Step 3/4 — Stored embeddings (%.1fs)", time.perf_counter() - t)
+
+        log.info("INGEST ▶ Step 4/4 — Building retrieval chain")
+        t = time.perf_counter()
         self.ingested_files.add(file_hash)
         self._refresh_chain()
+        log.info("INGEST ✓ Step 4/4 — Chain ready (%.1fs)", time.perf_counter() - t)
 
+        log.info("INGEST ✓ Complete: %s — %d pages, %d chunks", path.name, len(raw_docs), len(chunks))
         return {
             "status": "success",
             "file": path.name,
@@ -207,6 +243,7 @@ class RAGEngine:
 
     def _refresh_chain(self):
         """Rebuild the LCEL retrieval chain after new docs are ingested."""
+        log.info("CHAIN ▶ Building history-aware retriever")
         retriever = self.vector_store.as_retriever(
             search_type="mmr",
             search_kwargs={"k": self.retriever_k, "fetch_k": self.retriever_k * 3},
@@ -231,6 +268,7 @@ class RAGEngine:
             history_messages_key="chat_history",
             output_messages_key="answer",
         )
+        log.info("CHAIN ✓ Chain built successfully")
 
     @staticmethod
     def _file_hash(path: Path) -> str:

@@ -250,22 +250,38 @@ with st.sidebar:
                     st.stop()
 
         for file in uploaded:
-            with st.spinner(f"Ingesting {file.name}..."):
-                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                    tmp.write(file.read())
-                    tmp_path = tmp.name
+            with st.status(f"Processing {file.name}...", expanded=True) as status:
                 try:
-                    result = st.session_state.engine.ingest_pdf(tmp_path)
+                    st.write("💾 Saving upload...")
+                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                        tmp.write(file.read())
+                        tmp_path = tmp.name
+
+                    st.write("📄 Loading PDF pages...")
+                    engine = st.session_state.engine
+
+                    st.write("✂️ Splitting into chunks...")
+                    st.write("🔢 Generating embeddings & storing...")
+                    st.write("🔗 Building retrieval chain...")
+
+                    result = engine.ingest_pdf(tmp_path)
                     result["name"] = file.name
+
                     if result["status"] == "success":
                         st.session_state.ingested_docs.append(result)
-                        st.success(f"✓ {file.name} — {result['chunks']} chunks")
+                        status.update(
+                            label=f"✓ {file.name} — {result['pages']} pages, {result['chunks']} chunks",
+                            state="complete",
+                        )
                     else:
-                        st.info(f"↩ {file.name} already ingested.")
+                        status.update(label=f"↩ {file.name} already ingested", state="complete")
+
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    status.update(label=f"✗ Failed: {file.name}", state="error")
+                    st.error(f"Error at step above: {e}")
                 finally:
-                    os.unlink(tmp_path)
+                    if os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
 
     # Ingested doc list
     if st.session_state.ingested_docs:
