@@ -262,13 +262,18 @@ with st.sidebar:
     if uploaded and st.button("Ingest Documents", use_container_width=True):
         # Lazy init — engine loads here on first use, not on page load
         if not st.session_state.engine:
-            with st.spinner("Loading engine (first time takes ~30s)..."):
+            with st.spinner("Loading embedding model — first load takes ~30s..."):
                 try:
                     st.session_state.engine = get_engine(api_key)
                     st.session_state.api_key_set = True
                 except Exception as e:
                     st.error(f"Failed to start engine: {e}")
                     st.stop()
+
+        # Guard: if engine still None after init attempt, stop here
+        if not st.session_state.engine:
+            st.error("Engine failed to initialise. Check your ANTHROPIC_API_KEY.")
+            st.stop()
 
         for file in uploaded:
             with st.status(f"Processing {file.name}...", expanded=True) as status:

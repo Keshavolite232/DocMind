@@ -136,10 +136,14 @@ class RAGEngine:
 
     def _init_vector_store(self):
         if self.vector_store_type == "chroma":
-            import chromadb
-            client = chromadb.EphemeralClient()
+            import shutil
+            # Wipe any existing database so every server start is a clean session.
+            # File-based SQLite is used instead of EphemeralClient because
+            # ChromaDB's in-memory SQLite is not thread-safe across Streamlit reruns.
+            if os.path.exists(self.chroma_persist_dir):
+                shutil.rmtree(self.chroma_persist_dir)
             return Chroma(
-                client=client,
+                persist_directory=self.chroma_persist_dir,
                 embedding_function=self.embeddings,
                 collection_name="rag_docs",
             )
