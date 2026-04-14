@@ -191,14 +191,10 @@ init_state()
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 @st.cache_resource(show_spinner=False)
-def get_engine(anthropic_key: str, vector_store: str, model: str):
-    """Cached engine — recreated only when settings change."""
+def get_engine(anthropic_key: str):
+    """Cached engine — uses fixed defaults, no user configuration."""
     from app.rag_engine import RAGEngine
-    return RAGEngine(
-        vector_store=vector_store,
-        anthropic_api_key=anthropic_key,
-        model_name=model,
-    )
+    return RAGEngine(anthropic_api_key=anthropic_key)
 
 
 def render_message(role: str, content: str, sources: list = None):
@@ -227,32 +223,18 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### ⚙️ Configuration")
-
-    # Anthropic API key loaded silently from .env — never exposed in the UI
+    # API key and engine settings are fixed — no user configuration needed
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
-    vector_store = st.selectbox(
-        "Vector Store",
-        ["chroma", "pinecone"],
-        help="ChromaDB runs locally. Pinecone requires PINECONE_API_KEY env var.",
-    )
-
-    model = st.selectbox(
-        "Claude Model",
-        ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-opus-4-5"],
-        help="Haiku is fastest & cheapest; Opus gives best reasoning.",
-    )
-
-    if st.button("Initialize Engine", use_container_width=True):
+    if st.button("Start DocMind", use_container_width=True):
         if not api_key:
             st.error("API key not found. Make sure ANTHROPIC_API_KEY is set in your .env file.")
         else:
-            with st.spinner("Warming up engine..."):
+            with st.spinner("Starting up..."):
                 try:
-                    st.session_state.engine = get_engine(api_key, vector_store, model)
+                    st.session_state.engine = get_engine(api_key)
                     st.session_state.api_key_set = True
-                    st.success("Engine ready!")
+                    st.success("Ready! Upload a PDF to get started.")
                 except Exception as e:
                     st.error(f"Init failed: {e}")
 
