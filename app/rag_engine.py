@@ -8,7 +8,7 @@ import hashlib
 import logging
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +38,7 @@ class ChromaDefaultEmbeddings(Embeddings):
 
     def embed_query(self, text: str) -> list[float]:
         return [float(v) for v in self._fn([text])[0]]
+
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -49,8 +50,6 @@ from langchain_core.output_parsers import StrOutputParser
 
 # ── Prompt templates ───────────────────────────────────────────────────────────
 
-# Rephrases the user's question into a standalone question given chat history,
-# so the retriever doesn't need to understand conversational context.
 CONTEXTUALIZE_Q_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (
         "Given the chat history and the latest user question, "
@@ -79,7 +78,7 @@ class RAGEngine:
     """
     Orchestrates the full RAG pipeline:
       1. Load & split PDF documents
-      2. Embed chunks into a vector store (ChromaDB or Pinecone)
+      2. Embed chunks into a vector store
       3. Answer questions with conversational memory (LCEL-based)
     """
 
@@ -89,12 +88,12 @@ class RAGEngine:
         chroma_persist_dir: str = "./chroma_db",
         pinecone_index: Optional[str] = None,
         anthropic_api_key: Optional[str] = None,
-        embedding_model: str = "default",   # uses chromadb's built-in ONNX model
+        embedding_model: str = "default",
         model_name: str = "claude-sonnet-4-5",
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
-        retriever_k: int = 4,
-        memory_window: int = 5,
+        retriever_k: int = 6,
+        memory_window: int = 10,
     ):
         self.vector_store_type = vector_store
         self.chroma_persist_dir = chroma_persist_dir
@@ -136,8 +135,6 @@ class RAGEngine:
 
     def _init_vector_store(self):
         if self.vector_store_type == "chroma":
-            # Use LangChain's built-in in-memory store — no SQLite, no threading
-            # issues, no ChromaDB database layer between Streamlit and the vectors.
             return InMemoryVectorStore(embedding=self.embeddings)
         elif self.vector_store_type == "pinecone":
             return self._init_pinecone()
@@ -161,9 +158,19 @@ class RAGEngine:
 
     # ── Document ingestion ─────────────────────────────────────────────────────
 
-    def ingest_pdf(self, pdf_path: str) -> dict:
-        """Load a PDF, split into chunks, embed, and add to the vector store."""
+    def ingest_pdf(self, pdf_path: str, progress_callback: Optional[Callable] = None) -> dict:
+        """
+        Load a PDF, split into chunks, embed, and add to the vector store.
+        progress_callback(step, total_steps, message) is called at each stage.
+        """
         path = Path(pdf_path)
+        total_steps = 4
+
+        def report(step: int, message: str):
+            log.info(message)
+            if progress_callback:
+                progress_callback(step, total_steps, message)
+
         log.info("INGEST ▶ Starting: %s", path.name)
 
         if not path.exists():
@@ -175,13 +182,13 @@ class RAGEngine:
             log.info("INGEST ↩ Skipped (already ingested): %s", path.name)
             return {"status": "skipped", "reason": "already ingested", "file": path.name}
 
-        log.info("INGEST ▶ Step 1/4 — Loading PDF pages")
+        report(1, "📄 Loading PDF pages...")
         t = time.perf_counter()
         loader = PyPDFLoader(str(path))
         raw_docs = loader.load()
         log.info("INGEST ✓ Step 1/4 — Loaded %d pages (%.1fs)", len(raw_docs), time.perf_counter() - t)
 
-        log.info("INGEST ▶ Step 2/4 — Splitting into chunks")
+        report(2, f"✂️ Splitting into chunks... ({len(raw_docs)} pages)")
         t = time.perf_counter()
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
@@ -194,14 +201,14 @@ class RAGEngine:
             chunk.metadata["file_hash"] = file_hash
         log.info("INGEST ✓ Step 2/4 — Created %d chunks (%.1fs)", len(chunks), time.perf_counter() - t)
 
-        log.info("INGEST ▶ Step 3/4 — Embedding & storing chunks")
+        report(3, f"🔢 Generating embeddings... ({len(chunks)} chunks)")
         t = time.perf_counter()
         batch_size = 50
         for i in range(0, len(chunks), batch_size):
             self.vector_store.add_documents(chunks[i : i + batch_size])
         log.info("INGEST ✓ Step 3/4 — Stored embeddings (%.1fs)", time.perf_counter() - t)
 
-        log.info("INGEST ▶ Step 4/4 — Building retrieval chain")
+        report(4, "🔗 Building retrieval chain...")
         t = time.perf_counter()
         self.ingested_files.add(file_hash)
         self._refresh_chain()
@@ -225,7 +232,8 @@ class RAGEngine:
     # ── Querying ───────────────────────────────────────────────────────────────
 
     def query(self, question: str) -> dict:
-        """Answer a question using the RAG pipeline with conversational memory."""
+        """Answer a question using the RAG pipeline with conversational memory.
+        Retries up to 3 times on rate limit / overload errors."""
         if not self.chain:
             raise RuntimeError("No documents ingested yet. Please upload PDFs first.")
 
@@ -234,10 +242,32 @@ class RAGEngine:
         if len(msgs) > self.memory_window * 2:
             self.chat_history.messages = msgs[-(self.memory_window * 2):]
 
-        result = self.chain.invoke(
-            {"input": question},
-            config={"configurable": {"session_id": "default"}},
-        )
+        last_error = None
+        for attempt in range(3):
+            try:
+                result = self.chain.invoke(
+                    {"input": question},
+                    config={"configurable": {"session_id": "default"}},
+                )
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e).lower()
+                retryable = any(x in err_str for x in [
+                    "rate_limit", "rate limit", "429",
+                    "overloaded", "too many requests", "capacity",
+                ])
+                if retryable and attempt < 2:
+                    wait = 2 ** attempt  # 1s, 2s
+                    log.warning(
+                        "Rate limit / overload on attempt %d/3 — retrying in %ds",
+                        attempt + 1, wait,
+                    )
+                    time.sleep(wait)
+                    continue
+                raise
+        else:
+            raise last_error
 
         sources = []
         for doc in result.get("context", []):
@@ -266,18 +296,13 @@ class RAGEngine:
             search_kwargs={"k": self.retriever_k},
         )
 
-        # Retriever that rephrases the question using chat history before searching
         history_aware_retriever = create_history_aware_retriever(
             self.llm, retriever, CONTEXTUALIZE_Q_PROMPT
         )
 
-        # Combine retrieved docs into an answer
         qa_chain = create_stuff_documents_chain(self.llm, QA_PROMPT)
-
-        # Full RAG chain: history-aware retrieval → answer generation
         rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
-        # Wrap with persistent message history
         self.chain = RunnableWithMessageHistory(
             rag_chain,
             lambda session_id: self.chat_history,

@@ -10,13 +10,10 @@ import streamlit as st
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Streamlit adds the script's folder (app/) to sys.path, not the project root.
-# This line ensures `from app.rag_engine import RAGEngine` resolves correctly.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-load_dotenv()   # picks up ANTHROPIC_API_KEY and OPENAI_API_KEY from your .env file
+load_dotenv()
 
-# ── Page config (must be first Streamlit call) ─────────────────────────────────
 st.set_page_config(
     page_title="DocMind · PDF Q&A",
     page_icon="📄",
@@ -91,36 +88,6 @@ html, body, [class*="css"] {
     margin-bottom: 0.6rem;
 }
 
-/* ── Chat header ── */
-.chat-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 1.2rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-}
-.chat-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    background: linear-gradient(135deg, var(--accent), var(--teal));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.chat-badge {
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 3px 8px;
-    border-radius: 20px;
-}
-
 /* ── Chat bubbles ── */
 .chat-bubble {
     padding: 12px 16px;
@@ -131,7 +98,6 @@ html, body, [class*="css"] {
     max-width: 82%;
 }
 .chat-user {
-    background: var(--accent);
     background: linear-gradient(135deg, var(--accent-h), var(--accent));
     color: #fff;
     margin-left: auto;
@@ -190,6 +156,23 @@ html, body, [class*="css"] {
 }
 .stButton:last-child > button:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
 
+/* ── Form submit button (Send) ── */
+[data-testid="stFormSubmitButton"] > button {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.88rem !important;
+    padding: 0.45rem 1rem !important;
+    transition: background 0.2s, transform 0.1s !important;
+    width: 100%;
+    height: 2.6rem;
+}
+[data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-h) !important; }
+[data-testid="stFormSubmitButton"] > button:active { transform: scale(0.98) !important; }
+
 /* ── Text input ── */
 .stTextInput > div > div > input {
     background: var(--surface) !important;
@@ -222,6 +205,101 @@ hr { border-color: var(--border) !important; margin: 1rem 0 !important; }
 /* ── Spinner ── */
 [data-testid="stSpinner"] p { color: var(--muted) !important; font-size: 0.85rem !important; }
 
+/* ── Progress bar ── */
+[data-testid="stProgressBar"] > div { background: var(--surface) !important; border-radius: 99px; }
+[data-testid="stProgressBar"] > div > div { background: linear-gradient(90deg, var(--accent), var(--teal)) !important; border-radius: 99px; }
+
+/* ── Badge ── */
+.chat-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 20px;
+    /* override the gradient applied to all panel-logo span children */
+    -webkit-text-fill-color: var(--muted) !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+}
+
+/* ── Loading screen ── */
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem;
+    text-align: center;
+}
+.loading-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50%       { opacity: 0.9; transform: scale(1.1); }
+}
+.loading-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.01em;
+}
+.loading-sub {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+.loading-bar-wrap {
+    width: 200px;
+    height: 3px;
+    background: #1e2433;
+    border-radius: 99px;
+    overflow: hidden;
+}
+.loading-bar-fill {
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, #6366f1, #2dd4bf);
+    border-radius: 99px;
+    animation: slide 1.5s ease-in-out infinite;
+}
+@keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+}
+
+/* ── Password screen ── */
+.auth-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+}
+.auth-logo {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1, #2dd4bf);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.03em;
+}
+.auth-sub {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
 /* ── Hide Streamlit chrome ── */
 #MainMenu, footer, header[data-testid="stHeader"] { display: none; }
 [data-testid="stDecoration"] { display: none; }
@@ -233,11 +311,12 @@ hr { border-color: var(--border) !important; margin: 1rem 0 !important; }
 
 def init_state():
     defaults = {
-        "engine": None,
-        "messages": [],           # [{role, content, sources}]
-        "ingested_docs": [],      # [{name, pages, chunks}]
-        "api_key_set": False,
-        "error": None,
+        "engine":        None,
+        "messages":      [],
+        "ingested_docs": [],
+        "api_key_set":   False,
+        "error":         None,
+        "engine_ready":  False,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -246,11 +325,11 @@ def init_state():
 init_state()
 
 
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 @st.cache_resource(show_spinner=False)
 def get_engine(anthropic_key: str):
-    """Cached engine — uses fixed defaults, no user configuration."""
     from app.rag_engine import RAGEngine
     return RAGEngine(anthropic_api_key=anthropic_key)
 
@@ -269,7 +348,7 @@ def render_message(role: str, content: str, sources: list = None):
     st.markdown(html, unsafe_allow_html=True)
 
 
-# ── Two-column layout (replaces native sidebar which collapses on Render) ───────
+# ── Two-column layout ──────────────────────────────────────────────────────────
 
 col_panel, col_chat = st.columns([1, 3], gap="small")
 
@@ -306,10 +385,11 @@ with col_panel:
 
     if uploaded and st.button("Ingest Documents", use_container_width=True):
         if not st.session_state.engine:
-            with st.spinner("Loading embedding model — first load takes ~30s..."):
+            with st.spinner("⏳ Loading embedding model — first load takes ~30s..."):
                 try:
                     st.session_state.engine = get_engine(api_key)
                     st.session_state.api_key_set = True
+                    st.session_state.engine_ready = True
                 except Exception as e:
                     st.error(f"Failed to start engine: {e}")
                     st.stop()
@@ -322,33 +402,38 @@ with col_panel:
             with st.status(f"Processing {file.name}...", expanded=True) as status:
                 tmp_path = None
                 try:
-                    st.write("💾 Saving upload...")
+                    progress_bar = st.progress(0, text="Starting...")
+
+                    def make_progress_callback(pbar):
+                        def on_progress(step, total, message):
+                            pbar.progress(step / total, text=message)
+                        return on_progress
+
                     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                         tmp.write(file.read())
                         tmp_path = tmp.name
 
-                    st.write("📄 Loading PDF pages...")
                     engine = st.session_state.engine
-
-                    st.write("✂️ Splitting into chunks...")
-                    st.write("🔢 Generating embeddings & storing...")
-                    st.write("🔗 Building retrieval chain...")
-
-                    result = engine.ingest_pdf(tmp_path)
+                    result = engine.ingest_pdf(
+                        tmp_path,
+                        progress_callback=make_progress_callback(progress_bar),
+                    )
                     result["name"] = file.name
 
                     if result["status"] == "success":
+                        progress_bar.progress(1.0, text="✓ Complete")
                         st.session_state.ingested_docs.append(result)
                         status.update(
                             label=f"✓ {file.name} — {result['pages']} pages, {result['chunks']} chunks",
                             state="complete",
                         )
                     else:
+                        progress_bar.empty()
                         status.update(label=f"↩ {file.name} already ingested", state="complete")
 
                 except Exception as e:
                     status.update(label=f"✗ Failed: {file.name}", state="error")
-                    st.error(f"Error at step above: {e}")
+                    st.error(f"Error: {e}")
                 finally:
                     if tmp_path and os.path.exists(tmp_path):
                         os.unlink(tmp_path)
@@ -376,17 +461,27 @@ with col_panel:
 
 with col_chat:
     if not st.session_state.ingested_docs:
-        st.markdown("""
-        <div style='text-align:center;padding:5rem 2rem;'>
-          <div style='font-size:2.5rem;margin-bottom:1rem;opacity:0.3'>📄</div>
-          <div style='font-size:1rem;font-weight:600;color:#e2e8f0;margin-bottom:.4rem;letter-spacing:-0.01em'>
-            No documents loaded
-          </div>
-          <div style='font-size:0.85rem;color:#64748b;'>
-            Upload one or more PDFs on the left, then click Ingest.
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Show loading screen if engine is initialising, otherwise show empty state
+        if not st.session_state.engine_ready and not st.session_state.engine:
+            st.markdown("""
+            <div class="loading-screen">
+              <div class="loading-icon">📄</div>
+              <div class="loading-title">No documents loaded</div>
+              <div class="loading-sub">Upload one or more PDFs on the left, then click Ingest.</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style='text-align:center;padding:5rem 2rem;'>
+              <div style='font-size:2.5rem;margin-bottom:1rem;opacity:0.3'>📄</div>
+              <div style='font-size:1rem;font-weight:600;color:#e2e8f0;margin-bottom:.4rem;letter-spacing:-0.01em'>
+                No documents loaded
+              </div>
+              <div style='font-size:0.85rem;color:#64748b;'>
+                Upload one or more PDFs on the left, then click Ingest.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
     else:
         chat_container = st.container()
         with chat_container:
@@ -400,16 +495,18 @@ with col_chat:
                 render_message(msg["role"], msg["content"], msg.get("sources"))
 
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-        input_col, send_col = st.columns([5, 1])
-        with input_col:
-            user_input = st.text_input(
-                "Ask a question",
-                placeholder="What does this document say about...?",
-                label_visibility="collapsed",
-                key="user_input",
-            )
-        with send_col:
-            send = st.button("Send →", use_container_width=True)
+
+        # st.form enables Enter-key submission
+        with st.form("chat_form", clear_on_submit=True):
+            input_col, send_col = st.columns([5, 1])
+            with input_col:
+                user_input = st.text_input(
+                    "Ask a question",
+                    placeholder="What does this document say about...?",
+                    label_visibility="collapsed",
+                )
+            with send_col:
+                send = st.form_submit_button("Send →", use_container_width=True)
 
         if send and user_input.strip():
             question = user_input.strip()
