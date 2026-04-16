@@ -314,9 +314,10 @@ def init_state():
         "engine":        None,
         "messages":      [],
         "ingested_docs": [],
-        "api_key_set":   False,
-        "error":         None,
-        "engine_ready":  False,
+        "api_key_set":      False,
+        "error":            None,
+        "engine_ready":     False,
+        "pending_question": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -496,22 +497,10 @@ with col_chat:
 
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
-        # st.form enables Enter-key submission
-        with st.form("chat_form", clear_on_submit=True):
-            input_col, send_col = st.columns([5, 1])
-            with input_col:
-                user_input = st.text_input(
-                    "Ask a question",
-                    placeholder="What does this document say about...?",
-                    label_visibility="collapsed",
-                )
-            with send_col:
-                send = st.form_submit_button("Send →", use_container_width=True)
-
-        if send and user_input.strip():
-            question = user_input.strip()
-            st.session_state.messages.append({"role": "user", "content": question})
-
+        # ── Phase 2: process any pending question ─────────────────────────────
+        if st.session_state.pending_question:
+            question = st.session_state.pending_question
+            st.session_state.pending_question = None
             with st.spinner("Thinking..."):
                 try:
                     result = st.session_state.engine.query(question)
@@ -526,4 +515,21 @@ with col_chat:
                         "content": f"⚠️ Error: {e}",
                         "sources": [],
                     })
+            st.rerun()
+
+        # ── Phase 1: capture new input (Enter key or Send button) ─────────────
+        with st.form("chat_form", clear_on_submit=True):
+            input_col, send_col = st.columns([5, 1])
+            with input_col:
+                user_input = st.text_input(
+                    "Ask a question",
+                    placeholder="What does this document say about...?",
+                    label_visibility="collapsed",
+                )
+            with send_col:
+                send = st.form_submit_button("Send →", use_container_width=True)
+
+        if send and user_input.strip():
+            st.session_state.messages.append({"role": "user", "content": user_input.strip()})
+            st.session_state.pending_question = user_input.strip()
             st.rerun()
