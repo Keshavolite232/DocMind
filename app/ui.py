@@ -27,147 +27,204 @@ st.set_page_config(
 # ── Custom CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg:       #0d0f14;
-    --surface:  #151821;
-    --border:   #252a38;
-    --accent:   #5b8dee;
-    --accent2:  #e05b8d;
-    --text:     #e8eaf0;
-    --muted:    #7b8099;
-    --success:  #4caf7d;
+    --bg:       #0f1117;
+    --panel:    #161b27;
+    --surface:  #1e2433;
+    --border:   #2a3348;
+    --accent:   #6366f1;
+    --accent-h: #4f46e5;
+    --teal:     #2dd4bf;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --success:  #34d399;
+    --danger:   #f87171;
+    --radius:   10px;
 }
 
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text);
 }
 
-/* Left panel (replaces native sidebar) */
-div[data-testid="column"]:first-child {
-    background: var(--surface);
+/* ── App shell ── */
+[data-testid="stAppViewContainer"] { background: var(--bg); }
+[data-testid="stHorizontalBlock"]  { gap: 0 !important; align-items: stretch; }
+
+/* ── Left panel ── */
+[data-testid="stColumn"]:first-child > div:first-child {
+    background: var(--panel);
     border-right: 1px solid var(--border);
-    padding: 1.5rem 1rem !important;
     min-height: 100vh;
+    padding: 1.8rem 1.2rem;
 }
 
-/* Header */
-.docmind-header {
+/* ── Panel logo ── */
+.panel-logo {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 1.8rem;
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 2rem;
+    align-items: center;
+    gap: 8px;
 }
-.docmind-title {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 2rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
+.panel-logo span {
+    background: linear-gradient(135deg, var(--accent), var(--teal));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin: 0;
-}
-.docmind-tag {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 4px;
 }
 
-/* Chat messages */
+/* ── Section labels ── */
+.section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+}
+
+/* ── Chat header ── */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 1.2rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.chat-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--accent), var(--teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.chat-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+/* ── Chat bubbles ── */
 .chat-bubble {
-    padding: 14px 18px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    line-height: 1.65;
-    font-size: 0.95rem;
-    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    line-height: 1.6;
+    font-size: 0.92rem;
+    max-width: 82%;
 }
 .chat-user {
-    background: linear-gradient(135deg, #1e2a4a, #1a2240);
-    border: 1px solid #2d3d6e;
+    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent-h), var(--accent));
+    color: #fff;
     margin-left: auto;
-    text-align: right;
+    border-bottom-right-radius: 3px;
 }
 .chat-assistant {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
 }
 .source-pill {
     display: inline-block;
-    font-size: 0.72rem;
-    background: #1a2240;
-    border: 1px solid #2d3d6e;
-    color: var(--accent);
+    font-size: 0.68rem;
+    font-weight: 500;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: #a5b4fc;
     padding: 2px 8px;
     border-radius: 20px;
-    margin: 4px 3px 0 0;
-    font-family: 'DM Mono', monospace;
+    margin: 5px 3px 0 0;
 }
 
-/* Doc card */
+/* ── Doc card ── */
 .doc-card {
-    background: #1c2030;
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
 }
-.doc-card .doc-name { font-weight: 600; color: var(--text); }
-.doc-card .doc-meta { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+.doc-card .doc-name { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-card .doc-meta { color: var(--muted); font-size: 0.74rem; margin-top: 2px; }
 
-/* Buttons */
+/* ── Buttons ── */
 .stButton > button {
-    background: linear-gradient(135deg, var(--accent), #4a7de0);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    padding: 0.5rem 1.2rem;
-    transition: opacity 0.2s;
+    background: var(--accent) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.88rem !important;
+    padding: 0.45rem 1rem !important;
+    transition: background 0.2s, transform 0.1s !important;
+    width: 100%;
 }
-.stButton > button:hover { opacity: 0.85; }
+.stButton > button:hover { background: var(--accent-h) !important; }
+.stButton > button:active { transform: scale(0.98) !important; }
 
-/* Input */
+/* Clear button — subdued */
+.stButton:last-child > button {
+    background: transparent !important;
+    border: 1px solid var(--border) !important;
+    color: var(--muted) !important;
+}
+.stButton:last-child > button:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
+
+/* ── Text input ── */
 .stTextInput > div > div > input {
     background: var(--surface) !important;
     border: 1px solid var(--border) !important;
     color: var(--text) !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.92rem !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
 }
 
-/* File uploader */
+/* ── File uploader ── */
 [data-testid="stFileUploader"] {
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-    padding: 8px;
-}
-
-/* Selectbox */
-.stSelectbox div[data-baseweb="select"] {
     background: var(--surface);
-    border-color: var(--border);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 4px 8px;
 }
+[data-testid="stFileUploader"]:hover { border-color: var(--accent); }
 
-/* Status/alert */
-.stSuccess { background: #1a3028 !important; border-color: var(--success) !important; }
-.stInfo    { background: #1a2a40 !important; border-color: var(--accent) !important; }
+/* ── Divider ── */
+hr { border-color: var(--border) !important; margin: 1rem 0 !important; }
 
-/* Divider */
-hr { border-color: var(--border) !important; }
+/* ── Status/alerts ── */
+[data-testid="stStatusWidget"] { background: var(--surface) !important; border-color: var(--border) !important; }
 
-/* Hide Streamlit chrome */
+/* ── Spinner ── */
+[data-testid="stSpinner"] p { color: var(--muted) !important; font-size: 0.85rem !important; }
+
+/* ── Hide Streamlit chrome ── */
 #MainMenu, footer, header[data-testid="stHeader"] { display: none; }
+[data-testid="stDecoration"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -220,20 +277,24 @@ col_panel, col_chat = st.columns([1, 3], gap="small")
 
 with col_panel:
     st.markdown("""
-    <div style='font-family:Syne,sans-serif;font-weight:800;font-size:1.4rem;
-                background:linear-gradient(135deg,#5b8dee,#e05b8d);
-                -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                background-clip:text;margin-bottom:1.5rem'>
-    📄 DocMind
+    <div class="panel-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <span>DocMind</span>
     </div>
     """, unsafe_allow_html=True)
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
     if not api_key:
-        st.error("ANTHROPIC_API_KEY not found in environment.")
+        st.error("ANTHROPIC_API_KEY not set.")
 
-    st.markdown("#### 📥 Upload PDFs")
+    st.markdown('<p class="section-label">Upload Documents</p>', unsafe_allow_html=True)
 
     uploaded = st.file_uploader(
         "Drop PDFs here",
@@ -293,7 +354,7 @@ with col_panel:
 
     if st.session_state.ingested_docs:
         st.markdown("---")
-        st.markdown("#### 📚 Indexed Documents")
+        st.markdown('<p class="section-label">Indexed Documents</p>', unsafe_allow_html=True)
         for doc in st.session_state.ingested_docs:
             st.markdown(f"""
             <div class="doc-card">
@@ -314,21 +375,21 @@ with col_panel:
 
 with col_chat:
     st.markdown("""
-    <div class="docmind-header">
-      <p class="docmind-title">DocMind</p>
-      <span class="docmind-tag">RAG · PDF Q&A</span>
+    <div class="chat-header">
+      <span class="chat-title">DocMind</span>
+      <span class="chat-badge">RAG · PDF Q&A</span>
     </div>
     """, unsafe_allow_html=True)
 
     if not st.session_state.ingested_docs:
         st.markdown("""
-        <div style='text-align:center;padding:4rem 2rem;color:#7b8099'>
-          <div style='font-size:3rem;margin-bottom:1rem'>📄</div>
-          <div style='font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:#e8eaf0;margin-bottom:.5rem'>
-            No documents yet
+        <div style='text-align:center;padding:5rem 2rem;'>
+          <div style='font-size:2.5rem;margin-bottom:1rem;opacity:0.3'>📄</div>
+          <div style='font-size:1rem;font-weight:600;color:#e2e8f0;margin-bottom:.4rem;letter-spacing:-0.01em'>
+            No documents loaded
           </div>
-          <div style='font-size:.9rem'>
-            Upload PDFs on the left to get started.
+          <div style='font-size:0.85rem;color:#64748b;'>
+            Upload one or more PDFs on the left, then click Ingest.
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -337,8 +398,8 @@ with col_chat:
         with chat_container:
             if not st.session_state.messages:
                 st.markdown("""
-                <div style='color:#7b8099;font-size:.9rem;text-align:center;padding:1.5rem 0'>
-                  Documents loaded. Ask anything about them below ↓
+                <div style='color:#64748b;font-size:0.85rem;text-align:center;padding:2rem 0;'>
+                  Documents ready — ask anything below
                 </div>
                 """, unsafe_allow_html=True)
             for msg in st.session_state.messages:
