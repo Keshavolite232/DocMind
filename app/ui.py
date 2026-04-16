@@ -286,6 +286,7 @@ with col_panel:
         <polyline points="10 9 9 9 8 9"/>
       </svg>
       <span>DocMind</span>
+      <span class="chat-badge">RAG · PDF Q&A</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -374,13 +375,6 @@ with col_panel:
 # ── Main chat area ─────────────────────────────────────────────────────────────
 
 with col_chat:
-    st.markdown("""
-    <div class="chat-header">
-      <span class="chat-title">DocMind</span>
-      <span class="chat-badge">RAG · PDF Q&A</span>
-    </div>
-    """, unsafe_allow_html=True)
-
     if not st.session_state.ingested_docs:
         st.markdown("""
         <div style='text-align:center;padding:5rem 2rem;'>
