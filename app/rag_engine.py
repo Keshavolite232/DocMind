@@ -158,9 +158,11 @@ class RAGEngine:
 
     # ── Document ingestion ─────────────────────────────────────────────────────
 
-    def ingest_pdf(self, pdf_path: str, progress_callback: Optional[Callable] = None) -> dict:
+    def ingest_pdf(self, pdf_path: str, progress_callback: Optional[Callable] = None,
+                   display_name: Optional[str] = None) -> dict:
         """
         Load a PDF, split into chunks, embed, and add to the vector store.
+        display_name overrides path.name in chunk metadata (use when pdf_path is a tmp file).
         progress_callback(step, total_steps, message) is called at each stage.
         """
         path = Path(pdf_path)
@@ -196,8 +198,9 @@ class RAGEngine:
             separators=["\n\n", "\n", ". ", " ", ""],
         )
         chunks = splitter.split_documents(raw_docs)
+        label = display_name or path.name
         for chunk in chunks:
-            chunk.metadata["source_file"] = path.name
+            chunk.metadata["source_file"] = label
             chunk.metadata["file_hash"] = file_hash
         log.info("INGEST ✓ Step 2/4 — Created %d chunks (%.1fs)", len(chunks), time.perf_counter() - t)
 

@@ -156,24 +156,58 @@ html, body, [class*="css"] {
 }
 .stButton:last-child > button:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
 
-/* ── Form submit button (Send) ── */
+/* ── Chat input bar ── */
+[data-testid="stForm"] {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 6px 6px 6px 14px !important;
+}
+[data-testid="stForm"]:focus-within {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+}
+/* Hide "Press Enter to submit form" hint */
+[data-testid="InputInstructions"] { display: none !important; }
+
+/* Input inside form — transparent, no border */
+[data-testid="stForm"] .stTextInput > div > div > input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--text) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.92rem !important;
+    padding-left: 0 !important;
+}
+[data-testid="stForm"] .stTextInput > div > div > input:focus {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Submit button — compact, right side */
+[data-testid="stFormSubmitButton"] {
+    display: flex !important;
+    justify-content: flex-end !important;
+}
 [data-testid="stFormSubmitButton"] > button {
     background: var(--accent) !important;
     color: #fff !important;
     border: none !important;
-    border-radius: var(--radius) !important;
+    border-radius: 8px !important;
     font-family: 'Inter', sans-serif !important;
     font-weight: 500 !important;
     font-size: 0.88rem !important;
-    padding: 0.45rem 1rem !important;
+    padding: 0.4rem 1.2rem !important;
     transition: background 0.2s, transform 0.1s !important;
-    width: 100%;
-    height: 2.6rem;
+    width: auto !important;
+    min-width: 90px;
+    height: 2.3rem;
 }
 [data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-h) !important; }
-[data-testid="stFormSubmitButton"] > button:active { transform: scale(0.98) !important; }
+[data-testid="stFormSubmitButton"] > button:active { transform: scale(0.97) !important; }
 
-/* ── Text input ── */
+/* ── Text input (outside form) ── */
 .stTextInput > div > div > input {
     background: var(--surface) !important;
     border: 1px solid var(--border) !important;
@@ -226,78 +260,47 @@ hr { border-color: var(--border) !important; margin: 1rem 0 !important; }
     -webkit-background-clip: unset !important;
 }
 
-/* ── Loading screen ── */
-.loading-screen {
+/* ── Empty / loading state ── */
+.empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 5rem 2rem;
+    padding: 4rem 2rem;
     text-align: center;
-}
-.loading-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50%       { opacity: 0.9; transform: scale(1.1); }
-}
-.loading-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #e2e8f0;
-    margin-bottom: 0.4rem;
-    letter-spacing: -0.01em;
-}
-.loading-sub {
-    font-size: 0.82rem;
-    color: #64748b;
-    margin-bottom: 1.5rem;
-}
-.loading-bar-wrap {
-    width: 200px;
-    height: 3px;
-    background: #1e2433;
-    border-radius: 99px;
-    overflow: hidden;
-}
-.loading-bar-fill {
     height: 100%;
-    width: 40%;
-    background: linear-gradient(90deg, #6366f1, #2dd4bf);
-    border-radius: 99px;
-    animation: slide 1.5s ease-in-out infinite;
 }
-@keyframes slide {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(350%); }
+.empty-state-icon { font-size: 2.2rem; margin-bottom: 0.8rem; opacity: 0.25; }
+.empty-state-title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+.empty-state-sub   { font-size: 0.82rem; color: var(--muted); }
+
+/* ── Thinking / typing indicator ── */
+.chat-thinking {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 16px !important;
+    width: auto !important;
+}
+.chat-thinking .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    display: inline-block;
+    animation: typing-dot 1.2s ease-in-out infinite;
+}
+.chat-thinking .dot:nth-child(2) { animation-delay: 0.2s; }
+.chat-thinking .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-dot {
+    0%, 60%, 100% { transform: translateY(0);    opacity: 0.35; }
+    30%            { transform: translateY(-5px); opacity: 1; }
 }
 
-/* ── Password screen ── */
-.auth-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-    text-align: center;
-}
-.auth-logo {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #6366f1, #2dd4bf);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.03em;
-}
-.auth-sub {
-    font-size: 0.85rem;
-    color: #64748b;
-    margin-bottom: 2rem;
+/* ── Scrollable chat container ── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: transparent !important;
+    border: none !important;
 }
 
 /* ── Hide Streamlit chrome ── */
@@ -418,6 +421,7 @@ with col_panel:
                     result = engine.ingest_pdf(
                         tmp_path,
                         progress_callback=make_progress_callback(progress_bar),
+                        display_name=file.name,
                     )
                     result["name"] = file.name
 
@@ -462,72 +466,64 @@ with col_panel:
 
 with col_chat:
     if not st.session_state.ingested_docs:
-        # Show loading screen if engine is initialising, otherwise show empty state
-        if not st.session_state.engine_ready and not st.session_state.engine:
-            st.markdown("""
-            <div class="loading-screen">
-              <div class="loading-icon">📄</div>
-              <div class="loading-title">No documents loaded</div>
-              <div class="loading-sub">Upload one or more PDFs on the left, then click Ingest.</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div style='text-align:center;padding:5rem 2rem;'>
-              <div style='font-size:2.5rem;margin-bottom:1rem;opacity:0.3'>📄</div>
-              <div style='font-size:1rem;font-weight:600;color:#e2e8f0;margin-bottom:.4rem;letter-spacing:-0.01em'>
-                No documents loaded
-              </div>
-              <div style='font-size:0.85rem;color:#64748b;'>
-                Upload one or more PDFs on the left, then click Ingest.
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Empty state — no documents ingested yet
+        st.markdown("""
+        <div class="empty-state">
+          <div class="empty-state-icon">📄</div>
+          <div class="empty-state-title">No documents loaded</div>
+          <div class="empty-state-sub">Upload one or more PDFs on the left panel, then click <strong>Ingest Documents</strong>.</div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        chat_container = st.container()
-        with chat_container:
+        # ── Fixed-height scrollable messages area ──────────────────────────────
+        with st.container(height=540, border=False):
             if not st.session_state.messages:
                 st.markdown("""
-                <div style='color:#64748b;font-size:0.85rem;text-align:center;padding:2rem 0;'>
-                  Documents ready — ask anything below
+                <div class="empty-state" style="padding:3rem 2rem;">
+                  <div class="empty-state-icon">💬</div>
+                  <div class="empty-state-title">Documents ready</div>
+                  <div class="empty-state-sub">Ask anything about the ingested documents below.</div>
                 </div>
                 """, unsafe_allow_html=True)
             for msg in st.session_state.messages:
                 render_message(msg["role"], msg["content"], msg.get("sources"))
+            # Thinking indicator — shows while query is in-flight
+            if st.session_state.pending_question:
+                st.markdown("""
+                <div class="chat-bubble chat-assistant chat-thinking">
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+                """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-
-        # ── Phase 2: process any pending question ─────────────────────────────
+        # ── Phase 2: process pending question (no blocking spinner) ───────────
         if st.session_state.pending_question:
             question = st.session_state.pending_question
             st.session_state.pending_question = None
-            with st.spinner("Thinking..."):
-                try:
-                    result = st.session_state.engine.query(question)
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": result["answer"],
-                        "sources": result.get("sources", []),
-                    })
-                except Exception as e:
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": f"⚠️ Error: {e}",
-                        "sources": [],
-                    })
+            try:
+                result = st.session_state.engine.query(question)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": result["answer"],
+                    "sources": result.get("sources", []),
+                })
+            except Exception as e:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"⚠️ Error: {e}",
+                    "sources": [],
+                })
             st.rerun()
 
         # ── Phase 1: capture new input (Enter key or Send button) ─────────────
         with st.form("chat_form", clear_on_submit=True):
-            input_col, send_col = st.columns([5, 1])
-            with input_col:
-                user_input = st.text_input(
-                    "Ask a question",
-                    placeholder="What does this document say about...?",
-                    label_visibility="collapsed",
-                )
-            with send_col:
-                send = st.form_submit_button("Send →", use_container_width=True)
+            user_input = st.text_input(
+                "Ask a question",
+                placeholder="What does this document say about...?",
+                label_visibility="collapsed",
+            )
+            send = st.form_submit_button("Send →")
 
         if send and user_input.strip():
             st.session_state.messages.append({"role": "user", "content": user_input.strip()})
